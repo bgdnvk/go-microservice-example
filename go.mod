@@ -3,6 +3,7 @@ module go-microservice-example
 go 1.18
 
 require (
+	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/go-pg/migrations/v8 v8.1.0 // indirect
 	github.com/go-pg/pg/v10 v10.10.7 // indirect
 	github.com/go-pg/zerochecker v0.2.0 // indirect
