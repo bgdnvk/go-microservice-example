@@ -19,20 +19,18 @@ func StartAPI(pgdb *pg.DB) *chi.Mux {
 	//in this case we will store our DB to use it later
 	r.Use(middleware.Logger, middleware.WithValue("DB", pgdb))
 
+	//routes for our service
 	r.Route("/comments", func(r chi.Router) {
 		r.Post("/", createComment)
 		r.Get("/", getComments)
 	})
 
+	//test route to make sure everything works
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("up and running"))
 	})
 
 	return r
-}
-
-func getComments(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("comments"))
 }
 
 type CreateCommentRequest struct {
@@ -110,12 +108,67 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 	//let's return a positive response
 	res := &CommentResponse{
 		Success: true,
-		Error: "",
+		Error:   "",
 		Comment: comment,
 	}
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
 		log.Printf("error encoding after creating comment %v\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+type CommentsResponse struct {
+	Success  bool              `json:"success"`
+	Error    string            `json:"error"`
+	Comments []*models.Comment `json:"comments"`
+}
+
+func getComments(w http.ResponseWriter, r *http.Request) {
+	//get db from ctx
+	pgdb, ok := r.Context().Value("DB").(*pg.DB)
+	if !ok {
+		res := &CommentsResponse{
+			Success:  false,
+			Error:    "could not get DB from context",
+			Comments: nil,
+		}
+		err := json.NewEncoder(w).Encode(res)
+		if err != nil {
+			log.Printf("error sending response %v\n", err)
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	//call models package to access the database and return the comments
+	comments, err := models.GetComments(pgdb)
+	if err != nil {
+		res := &CommentsResponse{
+			Success:  false,
+			Error:    err.Error(),
+			Comments: nil,
+		}
+		err := json.NewEncoder(w).Encode(res)
+		if err != nil {
+			log.Printf("error sending response %v\n", err)
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	//positive response
+	res := &CommentsResponse{
+		Success:  true,
+		Error:    "",
+		Comments: comments,
+	}
+	//encode the positive response to json and send it back
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		log.Printf("error encoding comments: %v\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }

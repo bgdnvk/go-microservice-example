@@ -35,3 +35,13 @@ func GetComment(db *pg.DB, commentID string) (*Comment, error) {
 
 	return comment, err
 }
+
+func GetComments(db *pg.DB) ([]*Comment, error) {
+	comments := make([]*Comment, 0)
+
+	err := db.Model(&comments).
+		Relation("User").
+		Select()
+
+	return comments, err
+}
