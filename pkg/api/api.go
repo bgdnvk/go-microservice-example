@@ -87,6 +87,24 @@ func handleDBFromContextErr(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadRequest)
 }
 
+func succCommentResponse(comment *models.Comment, w http.ResponseWriter) {
+	//return successful response
+	res := &CommentResponse{
+		Success: true,
+		Error:   "",
+		Comment: comment,
+	}
+	//send the encoded response to responsewriter
+	err := json.NewEncoder(w).Encode(res)
+	if err != nil {
+		log.Printf("error encoding comment: %v\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	//send a 200 response
+	w.WriteHeader(http.StatusOK)
+}
+
 // -- handle routes
 
 func createComment(w http.ResponseWriter, r *http.Request) {
@@ -118,18 +136,7 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 	}
 	//everything is good
 	//let's return a positive response
-	res := &CommentResponse{
-		Success: true,
-		Error:   "",
-		Comment: comment,
-	}
-	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		log.Printf("error encoding after creating comment %v\n", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+	succCommentResponse(comment, w)
 }
 
 func getComments(w http.ResponseWriter, r *http.Request) {
@@ -181,19 +188,7 @@ func getCommentByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//if the retrieval from the db was successful send the data
-	res := &CommentResponse{
-		Success: true,
-		Error:   "",
-		Comment: comment,
-	}
-	//encode the positive response to json and send it back
-	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		log.Printf("error encoding comments: %v\n", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+	succCommentResponse(comment, w)
 }
 
 func updateCommentByID(w http.ResponseWriter, r *http.Request) {
@@ -228,23 +223,5 @@ func updateCommentByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleErr(w, err)
 	}
-	succResponse(comment, w)
-}
-
-func succResponse(comment *models.Comment, w http.ResponseWriter) {
-		//return successful response
-		res := &CommentResponse{
-			Success: true,
-			Error:   "",
-			Comment: comment,
-		}
-		//send the encoded response to responsewriter
-		err := json.NewEncoder(w).Encode(res)
-		if err != nil {
-			log.Printf("error encoding comments: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		//send a 200 response
-		w.WriteHeader(http.StatusOK)
+	succCommentResponse(comment, w)
 }
