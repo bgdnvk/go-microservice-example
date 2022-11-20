@@ -228,19 +228,23 @@ func updateCommentByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleErr(w, err)
 	}
-	//return successful response
-	res := &CommentResponse{
-		Success: true,
-		Error:   "",
-		Comment: comment,
-	}
-	//send the encoded response to responsewriter
-	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		log.Printf("error encoding comments: %v\n", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	//send a 200 response
-	w.WriteHeader(http.StatusOK)
+	succResponse(comment, w)
+}
+
+func succResponse(comment *models.Comment, w http.ResponseWriter) {
+		//return successful response
+		res := &CommentResponse{
+			Success: true,
+			Error:   "",
+			Comment: comment,
+		}
+		//send the encoded response to responsewriter
+		err := json.NewEncoder(w).Encode(res)
+		if err != nil {
+			log.Printf("error encoding comments: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		//send a 200 response
+		w.WriteHeader(http.StatusOK)
 }
