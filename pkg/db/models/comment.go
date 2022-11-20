@@ -45,3 +45,21 @@ func GetComments(db *pg.DB) ([]*Comment, error) {
 
 	return comments, err
 }
+
+func UpdateComment(db *pg.DB, req *Comment) (*Comment, error) {
+	_, err := db.Model(req).
+		WherePK().
+		Update()
+	if err != nil {
+		return nil, err
+	}
+
+	comment := &Comment{}
+
+	err = db.Model(comment).
+		Relation("User").
+		Where("comment.id = ?", req.ID).
+		Select()
+
+	return comment, err
+}

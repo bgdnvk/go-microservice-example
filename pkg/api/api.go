@@ -5,6 +5,7 @@ import (
 	"go-microservice-example/pkg/db/models"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -24,6 +25,7 @@ func StartAPI(pgdb *pg.DB) *chi.Mux {
 		r.Post("/", createComment)
 		r.Get("/", getComments)
 		r.Get("/{commentID}", getCommentByID)
+		r.Put("/{commentID}", updateCommentByID)
 	})
 
 	//test route to make sure everything works
@@ -34,9 +36,9 @@ func StartAPI(pgdb *pg.DB) *chi.Mux {
 	return r
 }
 
-// -- Responses
+// -- Requests and Responses
 
-type CreateCommentRequest struct {
+type CommentRequest struct {
 	Comment string `json:"comment"`
 	UserID  int64  `json:"user_id"`
 }
@@ -89,7 +91,7 @@ func handleDBFromContextErr(w http.ResponseWriter) {
 
 func createComment(w http.ResponseWriter, r *http.Request) {
 	//get the request body and decode it
-	req := &CreateCommentRequest{}
+	req := &CommentRequest{}
 	err := json.NewDecoder(r.Body).Decode(req)
 	//if there's an error with decoding the information
 	//send a response with an error
@@ -191,5 +193,54 @@ func getCommentByID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func updateCommentByID(w http.ResponseWriter, r *http.Request) {
+	//get the data from the request
+	req := &CommentRequest{}
+	//decode the data
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		handleErr(w, err)
+		return
+	}
+	pgdb, ok := r.Context().Value("DB").(*pg.DB)
+	if !ok {
+		handleDBFromContextErr(w)
+		return
+	}
+	//get the commentID to know what comment to modify
+	commentID := chi.URLParam(r, "commentID")
+	//we get a string but we need to send an int so we convert it
+	intCommentID, err := strconv.ParseInt(commentID, 10, 64)
+	if err != nil {
+		handleErr(w, err)
+		return
+	}
+
+	//update the comment
+	comment, err := models.UpdateComment(pgdb, &models.Comment{
+		ID:      intCommentID,
+		Comment: req.Comment,
+		UserID:  req.UserID,
+	})
+	if err != nil {
+		handleErr(w, err)
+	}
+	//return successful response
+	res := &CommentResponse{
+		Success: true,
+		Error:   "",
+		Comment: comment,
+	}
+	//send the encoded response to responsewriter
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		log.Printf("error encoding comments: %v\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	//send a 200 response
 	w.WriteHeader(http.StatusOK)
 }
