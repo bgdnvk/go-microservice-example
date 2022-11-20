@@ -33,6 +33,8 @@ func StartAPI(pgdb *pg.DB) *chi.Mux {
 	return r
 }
 
+// -- Responses
+
 type CreateCommentRequest struct {
 	Comment string `json:"comment"`
 	UserID  int64  `json:"user_id"`
@@ -42,6 +44,12 @@ type CommentResponse struct {
 	Success bool            `json:"success"`
 	Error   string          `json:"error"`
 	Comment *models.Comment `json:"comment"`
+}
+
+type CommentsResponse struct {
+	Success  bool              `json:"success"`
+	Error    string            `json:"error"`
+	Comments []*models.Comment `json:"comments"`
 }
 
 //-- UTILS --
@@ -75,6 +83,8 @@ func handleDBFromContextErr(w http.ResponseWriter) {
 	//return a bad request and exist the function
 	w.WriteHeader(http.StatusBadRequest)
 }
+
+// -- handle routes
 
 func createComment(w http.ResponseWriter, r *http.Request) {
 	//get the request body and decode it
@@ -117,12 +127,6 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-}
-
-type CommentsResponse struct {
-	Success  bool              `json:"success"`
-	Error    string            `json:"error"`
-	Comments []*models.Comment `json:"comments"`
 }
 
 func getComments(w http.ResponseWriter, r *http.Request) {
