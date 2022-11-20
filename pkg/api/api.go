@@ -44,6 +44,38 @@ type CommentResponse struct {
 	Comment *models.Comment `json:"comment"`
 }
 
+//-- UTILS --
+
+func handleErr(w http.ResponseWriter, err error) {
+	res := &CommentResponse{
+		Success: false,
+		Error:   err.Error(),
+		Comment: nil,
+	}
+	err = json.NewEncoder(w).Encode(res)
+	//if there's an error with encoding handle it
+	if err != nil {
+		log.Printf("error sending response %v\n", err)
+	}
+	//return a bad request and exist the function
+	w.WriteHeader(http.StatusBadRequest)
+}
+
+func handleDBFromContextErr(w http.ResponseWriter) {
+	res := &CommentResponse{
+		Success: false,
+		Error:   "could not get the DB from context",
+		Comment: nil,
+	}
+	err := json.NewEncoder(w).Encode(res)
+	//if there's an error with encoding handle it
+	if err != nil {
+		log.Printf("error sending response %v\n", err)
+	}
+	//return a bad request and exist the function
+	w.WriteHeader(http.StatusBadRequest)
+}
+
 func createComment(w http.ResponseWriter, r *http.Request) {
 	//get the request body and decode it
 	req := &CreateCommentRequest{}
@@ -51,18 +83,7 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 	//if there's an error with decoding the information
 	//send a response with an error
 	if err != nil {
-		res := &CommentResponse{
-			Success: false,
-			Error:   err.Error(),
-			Comment: nil,
-		}
-		err = json.NewEncoder(w).Encode(res)
-		//if there's an error with encoding handle it
-		if err != nil {
-			log.Printf("error sending response %v\n", err)
-		}
-		//return a bad request and exist the function
-		w.WriteHeader(http.StatusBadRequest)
+		handleErr(w, err)
 		return
 	}
 	//get the db from context
@@ -70,18 +91,7 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 	//if we can't get the db let's handle the error
 	//and send an adequate response
 	if !ok {
-		res := &CommentResponse{
-			Success: false,
-			Error:   "could not get the DB from context",
-			Comment: nil,
-		}
-		err = json.NewEncoder(w).Encode(res)
-		//if there's an error with encoding handle it
-		if err != nil {
-			log.Printf("error sending response %v\n", err)
-		}
-		//return a bad request and exist the function
-		w.WriteHeader(http.StatusBadRequest)
+		handleDBFromContextErr(w)
 		return
 	}
 	//if we can get the db then
@@ -90,18 +100,7 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 		UserID:  req.UserID,
 	})
 	if err != nil {
-		res := &CommentResponse{
-			Success: false,
-			Error:   err.Error(),
-			Comment: nil,
-		}
-		err = json.NewEncoder(w).Encode(res)
-		//if there's an error with encoding handle it
-		if err != nil {
-			log.Printf("error sending response %v\n", err)
-		}
-		//return a bad request and exist the function
-		w.WriteHeader(http.StatusBadRequest)
+		handleErr(w, err)
 		return
 	}
 	//everything is good
@@ -130,31 +129,13 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 	//get db from ctx
 	pgdb, ok := r.Context().Value("DB").(*pg.DB)
 	if !ok {
-		res := &CommentsResponse{
-			Success:  false,
-			Error:    "could not get DB from context",
-			Comments: nil,
-		}
-		err := json.NewEncoder(w).Encode(res)
-		if err != nil {
-			log.Printf("error sending response %v\n", err)
-		}
-		w.WriteHeader(http.StatusBadRequest)
+		handleDBFromContextErr(w)
 		return
 	}
 	//call models package to access the database and return the comments
 	comments, err := models.GetComments(pgdb)
 	if err != nil {
-		res := &CommentsResponse{
-			Success:  false,
-			Error:    err.Error(),
-			Comments: nil,
-		}
-		err := json.NewEncoder(w).Encode(res)
-		if err != nil {
-			log.Printf("error sending response %v\n", err)
-		}
-		w.WriteHeader(http.StatusBadRequest)
+		handleErr(w, err)
 		return
 	}
 	//positive response
