@@ -26,6 +26,7 @@ func StartAPI(pgdb *pg.DB) *chi.Mux {
 		r.Get("/", getComments)
 		r.Get("/{commentID}", getCommentByID)
 		r.Put("/{commentID}", updateCommentByID)
+		r.Delete("/{commentID}", deleteCommentByID)
 	})
 
 	//test route to make sure everything works
@@ -224,4 +225,38 @@ func updateCommentByID(w http.ResponseWriter, r *http.Request) {
 		handleErr(w, err)
 	}
 	succCommentResponse(comment, w)
+}
+
+func deleteCommentByID(w http.ResponseWriter, r *http.Request) {
+	//parse in the req body
+	req := &CommentRequest{}
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		handleErr(w, err)
+		return
+	}
+	
+	//get the db from ctx
+	pgdb, ok := r.Context().Value("DB").(*pg.DB)
+	if !ok {
+		handleDBFromContextErr(w)
+		return
+	}
+
+	//get the commentID
+	commentID := chi.URLParam(r, "commentID")
+	intCommentID, err := strconv.ParseInt(commentID, 10, 64)
+	if err != nil {
+		handleErr(w, err)
+		return
+	}
+
+	//delete comment
+	err = models.DeleteComment(pgdb, intCommentID)
+	if err != nil {
+		handleErr(w, err)
+	}
+
+	//send successful response
+	succCommentResponse(nil, w)
 }

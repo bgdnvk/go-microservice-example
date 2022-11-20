@@ -65,9 +65,7 @@ func UpdateComment(db *pg.DB, req *Comment) (*Comment, error) {
 }
 
 func DeleteComment(db *pg.DB, commentID int64) error {
-	comment := &Comment{
-		ID: commentID,
-	}
+	comment := &Comment{}
 
 	err := db.Model(comment).
 		Relation("User").
@@ -77,7 +75,7 @@ func DeleteComment(db *pg.DB, commentID int64) error {
 		return err
 	}
 
-	_, err = db.Model().WherePK().Delete()
+	_, err = db.Model(comment).WherePK().Delete()
 
 	return err
 }
