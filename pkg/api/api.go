@@ -23,6 +23,7 @@ func StartAPI(pgdb *pg.DB) *chi.Mux {
 	r.Route("/comments", func(r chi.Router) {
 		r.Post("/", createComment)
 		r.Get("/", getComments)
+		r.Get("/{commentID}", getCommentByID)
 	})
 
 	//test route to make sure everything works
@@ -147,6 +148,41 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 		Success:  true,
 		Error:    "",
 		Comments: comments,
+	}
+	//encode the positive response to json and send it back
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		log.Printf("error encoding comments: %v\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func getCommentByID(w http.ResponseWriter, r *http.Request) {
+	//get the id from the URL parameter
+	//alternatively you could use a URL query
+	commentID := chi.URLParam(r, "commentID")
+
+	//get the db from ctx
+	pgdb, ok := r.Context().Value("DB").(*pg.DB)
+	if !ok {
+		handleDBFromContextErr(w)
+		return
+	}
+
+	//get the comment from the DB
+	comment, err := models.GetComment(pgdb, commentID)
+	if err != nil {
+		handleErr(w, err)
+		return
+	}
+
+	//if the retrieval from the db was successful send the data
+	res := &CommentResponse{
+		Success: true,
+		Error:   "",
+		Comment: comment,
 	}
 	//encode the positive response to json and send it back
 	err = json.NewEncoder(w).Encode(res)
