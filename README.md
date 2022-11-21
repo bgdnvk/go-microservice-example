@@ -1,5 +1,6 @@
 # go-microservice-example  
-WIP example for my blog: bognov.tech
+Example for my blog: https://bognov.tech/  
+You can find the article here:  https://bognov.tech/modern-api-design-with-golang-postgresql-and-docker
 
 # start docker
 docker compose up --build
