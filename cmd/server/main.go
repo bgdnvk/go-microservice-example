@@ -14,7 +14,9 @@ func main() {
 	//start the db
 	pgdb, err := db.StartDB()
 	if err != nil {
-		log.Printf("error starting the database %v", err)
+		log.Printf("error: %v", err)
+		panic("error starting the database")
+
 	}
 	//get the router of the API by passing the db
 	router := api.StartAPI(pgdb)
@@ -24,5 +26,6 @@ func main() {
 	err = http.ListenAndServe(fmt.Sprintf(":%s", port), router)
 	if err != nil {
 		log.Printf("error from router %v\n", err)
+		return
 	}
 }
