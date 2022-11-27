@@ -4,12 +4,16 @@ services:
   db:
     image: postgres
     restart: always
+    ports:
+      - 5432:5432
     environment:
       POSTGRES_PASSWORD: admin
+
   api:
     build: .
     ports:
       - 8080:8080
+    restart: on-failure:10
     environment:
       - PORT=8080
       - DATABASE_URL=db
